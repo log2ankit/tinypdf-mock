@@ -265,7 +265,8 @@ test('--send-local-only keeps the sender on this machine and private networks', 
   for (const ip of ['127.0.0.1', '10.1.2.3', '172.16.0.1', '172.31.255.255', '192.168.1.5', '169.254.1.1', '::1', 'fd12::1', 'fe80::1', '::ffff:127.0.0.1']) assert.equal(isLocalAddress(ip), true, ip);
   for (const ip of ['8.8.8.8', '172.32.0.1', '172.15.0.1', '192.169.0.1', '1.1.1.1', '2606:4700::1111', '::ffff:8.8.8.8', 'example.com', '']) assert.equal(isLocalAddress(ip), false, ip);
   const upstream = http.createServer((req, res) => res.end('hi'));
-  await new Promise((r) => upstream.listen(0, '127.0.0.1', r));
+  /* no host: listens on IPv4 and IPv6, since "localhost" means ::1 first on Node 18 and 127.0.0.1 on others */
+  await new Promise((r) => upstream.listen(0, r));
   const port = upstream.address().port;
   try {
     await withMock({ sendLocalOnly: true }, async (mock) => {
