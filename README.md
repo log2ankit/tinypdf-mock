@@ -49,6 +49,12 @@ browser blocks, such as `Cookie`. The retry policy on the page applies, with a t
 
 The fault settings apply to the mock API only. They do not change what your own API answers.
 
+If your API needs credentials, add them under Headers: `Authorization: Bearer <token>`, an API key header,
+`Authorization: Basic <base64 of user:password>`, or a `Cookie`. The page does not log in for you; get a
+token the way your app does and paste it in. For HTTPS with a self-signed certificate, start with
+`--insecure`. Client certificates (mutual TLS) are not supported. Headers you enter go to the address you
+send to and nowhere else, and are not saved.
+
 ## If you build a backend
 
 Put it in place of a service your code depends on, then make that service fail.
