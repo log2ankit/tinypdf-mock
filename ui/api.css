@@ -134,6 +134,9 @@ html:not([data-theme]) .ap { color-scheme: light; }
 .ap code { font-family: var(--ap-mono); font-size: .92em; }
 .ap-steps code, .ap-base code { background: var(--ap-tint); border: 1px solid var(--ap-line); border-radius: 5px; padding: 1px 6px; }
 .ap-base { margin: 0; font-size: 14.5px; }
+.ap-uses { margin: 10px 0 0; padding-left: 20px; font-size: 14px; }
+.ap-uses li { margin: 6px 0; }
+.ap-uses code { background: var(--ap-tint); border: 1px solid var(--ap-line); border-radius: 5px; padding: 1px 6px; word-break: break-all; }
 .ap-btn.ap-small { padding: 3px 10px; font-size: 12.5px; border-radius: 6px; }
 .ap-err { color: var(--ap-bad); font-size: 13.5px; margin-top: 6px; }
 .ap-err:empty { display: none; }

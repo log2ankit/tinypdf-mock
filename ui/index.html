@@ -42,8 +42,11 @@
 <p class="ap-hint">The server runs on your own machine and this page talks to it directly; nothing passes through TinyPDF. If your browser refuses the connection, open the control page the server prints (<code>http://localhost:4747/__mock/</code>): it is this same page, served from your machine.</p>
 </div>
 <div id="ap-local-on" hidden>
-<p class="ap-base">Point your app or service at <code id="ap-local-base"></code> <button id="ap-local-copy" class="ap-btn ap-small" type="button">Copy</button> <button id="ap-local-disconnect" class="ap-btn ap-small" type="button">Disconnect</button></p>
-<p class="ap-hint">Every request it receives shows up under <b>Requests received</b>. Changes to <b>Server behavior</b> and <b>Mock routes</b> apply to the running server straight away.</p>
+<p class="ap-base">The mock API is at <code id="ap-local-base"></code> <button id="ap-local-copy" class="ap-btn ap-small" type="button">Copy</button> <button id="ap-local-disconnect" class="ap-btn ap-small" type="button">Disconnect</button></p>
+<ul class="ap-uses">
+<li><b>To call your own API:</b> type its address in the request form below, for example <code>http://localhost:8080/users</code>, and press Send. It can be on any port. Your API needs no changes and no CORS headers.</li>
+<li><b>To give your app a mock API:</b> point your app or service at the address above. Each request it makes shows up under <b>Requests received</b>, and <b>Server behavior</b> and <b>Mock routes</b> change what the mock answers, straight away.</li>
+</ul>
 </div>
 </section>
 
@@ -59,7 +62,7 @@
 <button id="ap-cancel" class="ap-btn" type="button" hidden>Cancel</button>
 </div>
 <p class="ap-hint" data-sim-only>Simulator paths: <code>/items</code> <code>/items/1</code> <code>/secure</code> <code>/status/503</code> <code>/delay/1500</code> <code>/headers</code>, plus your own mock routes. Press Ctrl+Enter to send.</p>
-<p class="ap-hint" data-local-only hidden>The local server sends this request for you, so any address works, including your own API on another port. There are no CORS limits and no blocked headers. Press Ctrl+Enter to send.</p>
+<p class="ap-hint" data-local-only hidden>The local server sends this request for you, so any address works: the mock itself, or your own API on another port, such as <code>http://localhost:8080/users</code>. There are no CORS limits and no blocked headers. Press Ctrl+Enter to send.</p>
 <p class="ap-hint" data-real-only hidden>Your browser sends the request straight to this address, so the server must allow cross-origin requests (CORS). Nothing is saved, but do not paste secrets you would not type into any web page. Response headers the server does not expose to browsers will not appear, and that can include Retry-After.</p>
 
 <h3>Headers</h3>
@@ -72,7 +75,7 @@
 
 <section class="ap-panel ap-p-sim" aria-labelledby="ap-h-sim" data-mock-only>
 <h2 id="ap-h-sim">2. Server behavior</h2>
-<p class="ap-hint ap-first" data-local-only hidden>These settings change the running server, so they affect every program that calls it, not only this page.</p>
+<p class="ap-hint ap-first" data-local-only hidden>These settings change the mock API on this server, for every program that calls it. They do not affect other addresses you send requests to, such as your own API.</p>
 <div class="ap-field"><label for="ap-fault">Inject a problem</label><select id="ap-fault"></select></div>
 <div id="ap-fault-fields" class="ap-fields"></div>
 <p id="ap-fault-help" class="ap-hint"></p>

@@ -40,6 +40,15 @@ Then open the control page and switch on a problem to see how your screens cope:
 | A request that never comes back | Slow responses, longer than your timeout |
 | What a CORS failure looks like | Untick "Send CORS headers" |
 
+## Calling your own API
+
+The control page is also a request sender, like a small Postman. With the server running, type the address of
+your own API in the request form, for example `http://localhost:8080/users`, and press Send. The request goes
+out from this server, not from the browser, so your API needs no CORS headers and you can send headers a
+browser blocks, such as `Cookie`. The retry policy on the page applies, with a timeline of each attempt.
+
+The fault settings apply to the mock API only. They do not change what your own API answers.
+
 ## If you build a backend
 
 Put it in place of a service your code depends on, then make that service fail.
