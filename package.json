@@ -1,0 +1,17 @@
+{
+  "name": "tinypdf-mock",
+  "version": "0.1.0",
+  "description": "Local mock API server with fault injection (503s, 429 + Retry-After, timeouts, dropped connections), a live request log and a browser control page. Zero dependencies.",
+  "keywords": ["mock", "mock-server", "api", "rest", "fault-injection", "retry", "backoff", "testing", "chaos", "http", "cors", "frontend", "backend"],
+  "homepage": "https://tinypdf.in/rest-api-playground.html",
+  "repository": { "type": "git", "url": "git+https://github.com/log2ankit/tinypdf-mock.git" },
+  "bugs": { "url": "https://github.com/log2ankit/tinypdf-mock/issues" },
+  "license": "MIT",
+  "author": "TinyPDF.in",
+  "main": "lib/server.js",
+  "types": "index.d.ts",
+  "bin": { "tinypdf-mock": "bin/cli.js" },
+  "files": ["bin", "lib", "ui", "index.d.ts", "README.md", "LICENSE", "SECURITY.md"],
+  "engines": { "node": ">=18" },
+  "scripts": { "test": "node --test test/core.test.js test/server.test.js", "start": "node bin/cli.js" }
+}

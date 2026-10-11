@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>tinypdf-mock control page</title>
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<script>(function(){var t='dark';try{t=localStorage.getItem('tinypdf-db-theme')||'dark'}catch(e){}if(t==='light')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',t)})()</script>
+<link rel="stylesheet" href="ui/play.css">
+<link rel="stylesheet" href="ui/api.css">
+<!--mock-boot-->
+</head>
+<body>
+<header class="site-header"><div class="wrap header-in">
+<span class="brand"><span class="brand-word">tinypdf-mock</span></span>
+<nav class="nav" aria-label="Links"><a href="https://tinypdf.in/rest-api-playground.html#local" target="_blank" rel="noopener">Guide</a><a href="https://github.com/log2ankit/tinypdf-mock" target="_blank" rel="noopener">Source</a>
+<span class="theme-switch" role="group" aria-label="Theme"><button type="button" data-theme-set="light" aria-pressed="true">☀️</button><button type="button" data-theme-set="dark" aria-pressed="false">🌙</button><button type="button" data-theme-set="auto" aria-pressed="false" title="Follow device">Auto</button></span></nav>
+</div></header>
+<main class="wrap ap" id="ap">
+<div class="top"><h1>Mock API control page</h1><p class="sub">Watch the requests this server receives, change its routes and faults while it runs, and send test requests. <b>Everything stays on your machine.</b></p></div>
+
+<!--tool: tinypdf.in builds its REST API Playground page from the markup between these two markers-->
+<div class="ap-bar">
+<div class="ap-field"><label for="ap-example">Start from an example</label><select id="ap-example"></select></div>
+<fieldset class="ap-seg"><legend class="ap-sr">Target</legend>
+<label><input type="radio" name="ap-target" value="sim" checked><span>Simulator</span></label>
+<label><input type="radio" name="ap-target" value="local"><span>Local server</span></label>
+<label><input type="radio" name="ap-target" value="real"><span>Real URL</span></label></fieldset>
+</div>
+<p id="ap-example-desc" class="ap-desc" aria-live="polite"></p>
+
+<section class="ap-panel ap-local" id="ap-local" data-local-only hidden aria-labelledby="ap-h-local">
+<h2 id="ap-h-local">Local server</h2>
+<div id="ap-local-status" class="ap-status" aria-live="polite"></div>
+<div id="ap-local-setup">
+<ol class="ap-steps">
+<li>In a terminal, run <code id="ap-npx">npx tinypdf-mock</code> <button id="ap-npx-copy" class="ap-btn ap-small" type="button">Copy</button>. It needs Node.js 18 or newer and installs nothing else.</li>
+<li>Paste the address it prints. It looks like <code>http://localhost:4747/#k=…</code></li>
+</ol>
+<div class="ap-urlrow"><input id="ap-local-addr" type="text" spellcheck="false" autocomplete="off" aria-label="Address printed by tinypdf-mock" placeholder="http://localhost:4747/#k=…"><button id="ap-local-connect" class="ap-btn ap-primary" type="button">Connect</button></div>
+<p class="ap-hint">The server runs on your own machine and this page talks to it directly; nothing passes through TinyPDF. If your browser refuses the connection, open the control page the server prints (<code>http://localhost:4747/__mock/</code>): it is this same page, served from your machine.</p>
+</div>
+<div id="ap-local-on" hidden>
+<p class="ap-base">Point your app or service at <code id="ap-local-base"></code> <button id="ap-local-copy" class="ap-btn ap-small" type="button">Copy</button> <button id="ap-local-disconnect" class="ap-btn ap-small" type="button">Disconnect</button></p>
+<p class="ap-hint">Every request it receives shows up under <b>Requests received</b>. Changes to <b>Server behavior</b> and <b>Mock routes</b> apply to the running server straight away.</p>
+</div>
+</section>
+
+<div class="ap-grid">
+<div class="ap-left">
+
+<section class="ap-panel ap-p-req" aria-labelledby="ap-h-req">
+<h2 id="ap-h-req">1. Request</h2>
+<div class="ap-urlrow">
+<select id="ap-method" aria-label="HTTP method"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>HEAD</option><option>OPTIONS</option></select>
+<input id="ap-url" type="text" spellcheck="false" autocomplete="off" aria-label="URL" placeholder="https://api.sim.local/items">
+<button id="ap-send" class="ap-btn ap-primary" type="button">Send</button>
+<button id="ap-cancel" class="ap-btn" type="button" hidden>Cancel</button>
+</div>
+<p class="ap-hint" data-sim-only>Simulator paths: <code>/items</code> <code>/items/1</code> <code>/secure</code> <code>/status/503</code> <code>/delay/1500</code> <code>/headers</code>, plus your own mock routes. Press Ctrl+Enter to send.</p>
+<p class="ap-hint" data-local-only hidden>The local server sends this request for you, so any address works, including your own API on another port. There are no CORS limits and no blocked headers. Press Ctrl+Enter to send.</p>
+<p class="ap-hint" data-real-only hidden>Your browser sends the request straight to this address, so the server must allow cross-origin requests (CORS). Nothing is saved, but do not paste secrets you would not type into any web page. Response headers the server does not expose to browsers will not appear, and that can include Retry-After.</p>
+
+<h3>Headers</h3>
+<table class="ap-hdr"><tbody id="ap-hdr-body"></tbody></table>
+<div class="ap-hdr-tools"><button id="ap-hdr-add" class="ap-btn" type="button">Add header</button><select id="ap-hdr-preset" aria-label="Add a common header"></select></div>
+
+<h3>Body</h3>
+<textarea id="ap-body" spellcheck="false" aria-label="Request body" placeholder='{"name": "Gizmo"}'></textarea>
+</section>
+
+<section class="ap-panel ap-p-sim" aria-labelledby="ap-h-sim" data-mock-only>
+<h2 id="ap-h-sim">2. Server behavior</h2>
+<p class="ap-hint ap-first" data-local-only hidden>These settings change the running server, so they affect every program that calls it, not only this page.</p>
+<div class="ap-field"><label for="ap-fault">Inject a problem</label><select id="ap-fault"></select></div>
+<div id="ap-fault-fields" class="ap-fields"></div>
+<p id="ap-fault-help" class="ap-hint"></p>
+<div class="ap-fields">
+<div class="ap-field" data-local-only hidden><label for="ap-fault-path">Only paths starting with</label><input id="ap-fault-path" type="text" spellcheck="false" autocomplete="off" placeholder="all paths"></div>
+<div class="ap-field"><label for="ap-lat">Base latency (ms)</label><input id="ap-lat" type="number" min="0" max="60000" value="120"></div>
+<div class="ap-field"><label for="ap-jit">Latency jitter (ms)</label><input id="ap-jit" type="number" min="0" max="60000" value="40"></div>
+<div class="ap-field"><label for="ap-seed">Random seed</label><input id="ap-seed" type="number" value="42"></div>
+</div>
+<label class="ap-check" data-sim-only><input id="ap-realtime" type="checkbox"><span>Wait in real time (default is an instant virtual clock, so a 30 s backoff costs nothing)</span></label>
+<label class="ap-check" data-local-only hidden><input id="ap-repeat" type="checkbox" checked><span>Start over after each success (so "fail the first 2" fails the first 2 of every round, per address)</span></label>
+<label class="ap-check" data-local-only hidden><input id="ap-cors" type="checkbox" checked><span>Send CORS headers (untick to see how a browser app fails without them)</span></label>
+<div class="ap-actions"><button id="ap-reset-server" class="ap-btn" type="button">Reset simulated server</button><button id="ap-rearm" class="ap-btn" type="button" data-local-only hidden>Start fault counts again</button></div>
+</section>
+
+<section class="ap-panel ap-p-retry" aria-labelledby="ap-h-retry">
+<h2 id="ap-h-retry">3. Retry policy</h2>
+<p class="ap-hint ap-first" data-local-only hidden>Used when you press Send here. Your own app keeps its own retry code; use this to try a policy before you write it.</p>
+<div class="ap-fields">
+<div class="ap-field"><label for="ap-strategy">Backoff strategy</label>
+<select id="ap-strategy"><option value="none">No retries</option><option value="fixed">Fixed</option><option value="linear">Linear</option><option value="exponential" selected>Exponential</option><option value="full-jitter">Exponential + full jitter</option><option value="equal-jitter">Exponential + equal jitter</option></select></div>
+<div class="ap-field"><label for="ap-base">Base delay (ms)</label><input id="ap-base" type="number" min="0" max="60000" value="500"></div>
+<div class="ap-field"><label for="ap-factor">Growth factor</label><input id="ap-factor" type="number" min="1" max="5" step="0.5" value="2"></div>
+<div class="ap-field"><label for="ap-max-delay">Max delay (ms)</label><input id="ap-max-delay" type="number" min="100" max="3600000" value="30000"></div>
+<div class="ap-field"><label for="ap-attempts">Max attempts</label><input id="ap-attempts" type="number" min="1" max="10" value="4"></div>
+<div class="ap-field"><label for="ap-timeout">Timeout per attempt (ms)</label><input id="ap-timeout" type="number" min="100" max="120000" value="3000"></div>
+</div>
+<p id="ap-strategy-help" class="ap-hint"></p>
+<h3>Retry on</h3>
+<div class="ap-checks">
+<label class="ap-check"><input id="ap-on-5xx" type="checkbox" checked><span>5xx errors</span></label>
+<label class="ap-check"><input id="ap-on-429" type="checkbox" checked><span>429 Too Many Requests</span></label>
+<label class="ap-check"><input id="ap-on-408" type="checkbox" checked><span>408 Request Timeout</span></label>
+<label class="ap-check"><input id="ap-on-network" type="checkbox" checked><span>Network errors</span></label>
+<label class="ap-check"><input id="ap-on-timeout" type="checkbox" checked><span>Timeouts</span></label>
+</div>
+<label class="ap-check"><input id="ap-honor-ra" type="checkbox" checked><span>Honor Retry-After (wait at least as long as the server asks)</span></label>
+<label class="ap-check"><input id="ap-safe" type="checkbox" checked><span>Safety rule: do not retry POST or PATCH without an Idempotency-Key</span></label>
+</section>
+
+<section class="ap-panel ap-p-routes" aria-labelledby="ap-h-routes" data-mock-only>
+<h2 id="ap-h-routes">4. Mock routes</h2>
+<p class="ap-hint ap-first">Your own endpoints, checked before the demo routes. A path can hold parts like <code>:id</code>. A body can use <code>{{params.id}}</code>, <code>{{query.q}}</code>, <code>{{body.name}}</code>, <code>{{now}}</code> and <code>{{uuid}}</code>.</p>
+<div id="ap-routes"></div>
+<div id="ap-routes-err" class="ap-err" role="alert"></div>
+<div class="ap-actions">
+<button id="ap-route-add" class="ap-btn" type="button">Add route</button>
+<button id="ap-route-sample" class="ap-btn" type="button">Add sample routes</button>
+<button id="ap-route-export" class="ap-btn" type="button">Download mock.json</button>
+<label class="ap-btn ap-file">Load mock.json<input type="file" id="ap-route-import" accept=".json,application/json"></label>
+</div>
+<label class="ap-check"><input id="ap-builtins" type="checkbox" checked><span>Also serve the demo routes (<code>/items</code>, <code>/secure</code>, <code>/status/503</code>, <code>/delay/1500</code>, <code>/headers</code>)</span></label>
+<p class="ap-hint" data-sim-only>To serve these routes to a real app, download <code>mock.json</code> and run <code>npx tinypdf-mock</code> in the same folder.</p>
+</section>
+
+</div>
+
+<div class="ap-right">
+<section class="ap-panel ap-incoming" aria-labelledby="ap-h-in" data-local-only hidden>
+<h2 id="ap-h-in">Requests received <span id="ap-in-count" class="ap-dim"></span></h2>
+<p class="ap-hint ap-first" id="ap-in-empty">Nothing yet. Call the server from your app, a terminal or the request form and each request appears here.</p>
+<div class="ap-in-wrap" id="ap-in-wrap" hidden><table class="ap-table ap-in"><thead><tr><th>Time</th><th>Request</th><th>Answer</th><th>Took</th></tr></thead><tbody id="ap-in-body"></tbody></table></div>
+<div id="ap-in-detail"></div>
+<div class="ap-actions"><button id="ap-in-clear" class="ap-btn" type="button">Clear list</button><label class="ap-check ap-inline"><input id="ap-in-pre" type="checkbox"><span>Show CORS preflight requests</span></label></div>
+</section>
+
+<section class="ap-panel ap-result" aria-labelledby="ap-h-res">
+<h2 id="ap-h-res">Result</h2>
+<div id="ap-status" class="ap-status" aria-live="polite"></div>
+<div id="ap-timeline"></div>
+<div class="ap-legend" aria-hidden="true"><span><i class="ap-tl-ok"></i>Success</span><span><i class="ap-tl-fail"></i>Failed attempt</span><span><i class="ap-tl-timeout"></i>Timeout</span><span><i class="ap-tl-wait"></i>Waiting</span></div>
+<table class="ap-table" id="ap-attempts" hidden><thead><tr><th>#</th><th>Starts</th><th>Took</th><th>Result</th><th>Then</th></tr></thead><tbody id="ap-attempts-body"></tbody></table>
+<div id="ap-notes"></div>
+<h3>Final response</h3>
+<div id="ap-response"></div>
+<details id="ap-seen" data-sim-only><summary>Request as the server saw it</summary><div id="ap-seen-body"></div></details>
+<div data-sim-only>
+<h3>Compare retry strategies</h3>
+<button id="ap-compare-btn" class="ap-btn" type="button">Run all strategies on this scenario</button>
+<div id="ap-compare-out"></div>
+</div>
+<details id="ap-code"><summary>Copy as code</summary>
+<div class="ap-tabs" id="ap-code-tabs" role="group" aria-label="Language"><button type="button" data-lang="curl" aria-pressed="true">curl</button><button type="button" data-lang="fetch" aria-pressed="false">JavaScript fetch</button><button type="button" data-lang="python" aria-pressed="false">Python</button></div>
+<pre class="ap-code-pre" id="ap-code-pre"></pre>
+<button id="ap-copy-code" class="ap-btn" type="button">Copy code</button>
+</details>
+<div class="ap-actions" data-sim-only><button id="ap-share" class="ap-btn" type="button">Copy link to this setup</button></div>
+<div id="ap-toast" class="ap-toast" aria-live="polite"></div>
+</section>
+</div>
+</div>
+
+<!--/tool-->
+</main>
+<footer class="site-footer"><div class="wrap footer-in"><span>tinypdf-mock · served from your machine</span><a href="https://tinypdf.in/rest-api-playground.html" target="_blank" rel="noopener">REST API Playground on TinyPDF.in</a></div></footer>
+<script>(function(){var s=function(t){if(t==='dark'||t==='auto')document.documentElement.setAttribute('data-theme',t);else{t='light';document.documentElement.removeAttribute('data-theme')}document.querySelectorAll('[data-theme-set]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.themeSet===t))})};document.querySelectorAll('[data-theme-set]').forEach(function(b){b.onclick=function(){s(b.dataset.themeSet);try{localStorage.setItem('tinypdf-db-theme',b.dataset.themeSet)}catch(e){}}});var t='dark';try{t=localStorage.getItem('tinypdf-db-theme')||'dark'}catch(e){}s(t);var l=document.querySelector('[data-logo]');if(l){var w=function(){var x=document.createElement('span');x.className='brand-word';x.textContent='TinyPDF.in';l.replaceWith(x)};if(l.complete&&!l.naturalWidth)w();else l.onerror=w}})()</script>
+<script src="ui/sim-core.js"></script><!-- served from lib/sim-core.js: one copy for the server and the page -->
+<script src="ui/rest-ui.js"></script>
+</body>
+</html>

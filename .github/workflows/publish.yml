@@ -1,0 +1,23 @@
+# Publishes to npm when a GitHub release is created. The package is built from this exact commit and
+# published with provenance, so the npm page links each version back to the source it came from.
+# Needs a repository secret named NPM_TOKEN (an npm automation token).
+name: publish
+on:
+  release:
+    types: [published]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm test
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
