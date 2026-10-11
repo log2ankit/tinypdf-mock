@@ -260,6 +260,25 @@ test('the sender reaches other servers and reports real failures', async () => {
   } finally { upstream.close(); }
 });
 
+test('--send-local-only keeps the sender on this machine and private networks', async () => {
+  const { isLocalAddress } = require('../lib/server.js');
+  for (const ip of ['127.0.0.1', '10.1.2.3', '172.16.0.1', '172.31.255.255', '192.168.1.5', '169.254.1.1', '::1', 'fd12::1', 'fe80::1', '::ffff:127.0.0.1']) assert.equal(isLocalAddress(ip), true, ip);
+  for (const ip of ['8.8.8.8', '172.32.0.1', '172.15.0.1', '192.169.0.1', '1.1.1.1', '2606:4700::1111', '::ffff:8.8.8.8', 'example.com', '']) assert.equal(isLocalAddress(ip), false, ip);
+  const upstream = http.createServer((req, res) => res.end('hi'));
+  await new Promise((r) => upstream.listen(0, '127.0.0.1', r));
+  const port = upstream.address().port;
+  try {
+    await withMock({ sendLocalOnly: true }, async (mock) => {
+      assert.equal(json(await ctl(mock, 'POST', '/send', { url: 'http://127.0.0.1:' + port + '/' })).status, 200);
+      assert.equal(json(await ctl(mock, 'POST', '/send', { url: 'http://localhost:' + port + '/' })).status, 200, 'a name that resolves to loopback');
+      const out = json(await ctl(mock, 'POST', '/send', { url: 'http://93.184.216.34/' }));
+      assert.equal(out.kind, 'network'); assert.equal(out.code, 'NOT_LOCAL');
+      assert.equal(json(await ctl(mock, 'POST', '/send', { url: 'http://[2606:4700::1111]/' })).code, 'NOT_LOCAL');
+      assert.equal(json(await ctl(mock, 'GET', '/state')).sendLocalOnly, true);
+    });
+  } finally { upstream.close(); }
+});
+
 test('events stream delivers each request to the page', async () => {
   await withMock({}, async (mock, url) => {
     const got = await new Promise((resolve, reject) => {

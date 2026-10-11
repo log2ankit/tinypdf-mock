@@ -35,6 +35,8 @@ export interface MockOptions {
   builtins?: boolean;
   ui?: boolean;
   send?: boolean;
+  /** The sender only reaches this machine and private network addresses. */
+  sendLocalOnly?: boolean;
   token?: string;
   allowOrigins?: string[];
   maxLog?: number;

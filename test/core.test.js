@@ -13,6 +13,13 @@ test('every example runs to its expected end', async () => {
   }
 });
 
+test('a run never makes more than 10 attempts', async () => {
+  const c = S.exampleConfig('flaky'); c.fault = { type: 'always', status: 503 }; c.policy.maxAttempts = 5000; c.policy.baseMs = 1;
+  const r = await S.run(c);
+  assert.equal(r.attempts.length, 10); assert.equal(r.outcome, 'failed');
+  assert.match(S.snippets(c).fetch, /MAX_ATTEMPTS = 10;/);
+});
+
 test('the same seed gives the same run', async () => {
   const mk = () => { const c = S.exampleConfig('flaky'); c.fault = { type: 'random', pct: 60 }; c.policy.strategy = 'full-jitter'; c.seed = 7; return c; };
   const a = await S.run(mk()), b = await S.run(mk());

@@ -27,6 +27,7 @@ Options
       --no-watch       do not reload the routes file when it changes
       --save           write routes edited in the control page back to the routes file
       --no-send        do not let the control page send requests through this server
+      --send-local-only  only send to this machine and private network addresses
       --insecure       accept self-signed certificates when sending requests
       --no-ui          do not serve the control page
       --allow-origin <url>   let a page on this origin control the server (repeatable)
@@ -52,7 +53,7 @@ function fail(msg) { process.stderr.write(pkg.name + ': ' + msg + '\n'); process
 function parseArgs(argv) {
   const o = { allowOrigins: [], files: [] };
   const flags = { '--no-repeat': ['repeat', false], '--no-builtins': ['builtins', false], '--no-cors': ['cors', false], '--no-watch': ['watch', false],
-    '--save': ['save', true], '--no-send': ['send', false], '--insecure': ['insecure', true], '--no-ui': ['ui', false], '--open': ['open', true], '-o': ['open', true],
+    '--save': ['save', true], '--no-send': ['send', false], '--send-local-only': ['sendLocalOnly', true], '--insecure': ['insecure', true], '--no-ui': ['ui', false], '--open': ['open', true], '-o': ['open', true],
     '--quiet': ['quiet', true], '-q': ['quiet', true], '--help': ['help', true], '-h': ['help', true], '--version': ['version', true], '-v': ['version', true] };
   const values = { '--port': 'port', '-p': 'port', '--host': 'host', '--fault': 'fault', '-f': 'fault', '--latency': 'latency', '--jitter': 'jitter', '--seed': 'seed',
     '--token': 'token', '--allow-origin': 'allowOrigin', '--routes': 'file', '-r': 'file' };
@@ -158,7 +159,7 @@ async function main() {
     latency: { baseMs: pick(num(o.latency, '--latency'), 'latency', 0), jitterMs: pick(num(o.jitter, '--jitter'), 'jitter', 0) },
     seed: pick(num(o.seed, '--seed'), 'seed', 42),
     cors: pick(o.cors, 'cors', true), repeat: pick(o.repeat, 'repeat', true), builtins: pick(o.builtins, 'builtins', true),
-    ui: o.ui, send: o.send, file: file ? path.basename(file) : null
+    ui: o.ui, send: o.send, sendLocalOnly: !!o.sendLocalOnly, file: file ? path.basename(file) : null
   };
   if (fromFile.latency && typeof fromFile.latency === 'object') {
     if (o.latency === undefined) options.latency.baseMs = Number(fromFile.latency.baseMs) || 0;

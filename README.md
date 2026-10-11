@@ -171,6 +171,7 @@ npx tinypdf-mock [file] [options]
       --no-watch       do not reload the routes file when it changes
       --save           write routes edited in the control page back to the file
       --no-send        do not let the control page send requests
+      --send-local-only  only send to this machine and private network addresses
       --insecure       accept self-signed certificates when sending
       --no-ui          do not serve the control page
       --allow-origin <url>   let a page on this origin control the server
@@ -219,7 +220,8 @@ This is a development tool. It listens on localhost only unless you pass `--host
 Everything under `/__mock/api/` needs the token printed at start-up, must be addressed as
 localhost, and is refused for web pages on any origin other than the server itself,
 `https://tinypdf.in` and those you add with `--allow-origin`. That matters because the control
-API can send HTTP requests from your machine; `--no-send` turns that part off.
+API can send HTTP requests from your machine. `--send-local-only` limits those to this machine and private
+network addresses, and `--no-send` turns sending off. A run from the control page makes at most 10 attempts.
 
 The mock API itself (every other path) answers anyone who can reach the port, and with CORS on
 it answers any web page you have open. Do not put real secrets in mock responses.
@@ -231,7 +233,7 @@ Found a way around these rules? See [SECURITY.md](SECURITY.md).
 ```
 git clone https://github.com/log2ankit/tinypdf-mock
 cd tinypdf-mock
-npm test              # 21 tests, no install needed
+npm test              # no install needed
 node bin/cli.js       # run from the checkout
 ```
 
