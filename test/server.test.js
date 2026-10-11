@@ -189,6 +189,19 @@ test('control API needs the token, a local host name and an allowed origin', asy
     const site = await ctl(mock, 'GET', '/state', undefined, { origin: 'https://tinypdf.in' });
     assert.equal(site.status, 200); assert.equal(site.headers['access-control-allow-origin'], 'https://tinypdf.in');
     assert.equal((await ctl(mock, 'GET', '/state', undefined, { origin: 'http://localhost:5173' })).status, 200);
+    const pre = await call(mock.url + '/__mock/api/state', { method: 'OPTIONS', headers: { origin: 'https://tinypdf.in', 'access-control-request-method': 'PUT', 'access-control-request-headers': 'content-type,x-mock-token', 'access-control-request-private-network': 'true' } });
+    assert.equal(pre.status, 204);
+    assert.equal(pre.headers['access-control-allow-origin'], 'https://tinypdf.in');
+    assert.equal(pre.headers['access-control-allow-private-network'], 'true');
+    const allowed = pre.headers['access-control-allow-headers'].split(',').map((h) => h.trim());
+    /* every header ui/rest-ui.js sends to the control API must be named here, or browsers on tinypdf.in refuse the call */
+    const sent = new Set();
+    const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'ui', 'rest-ui.js'), 'utf8');
+    for (const m of src.matchAll(/'(X-Mock-[A-Za-z-]+|Content-Type)'\s*:/g)) sent.add(m[1].toLowerCase());
+    assert.ok(sent.has('x-mock-token'));
+    for (const h of sent) assert.ok(allowed.includes(h), 'the page sends ' + h + ' but the preflight does not allow it');
+    assert.match(pre.headers['access-control-allow-methods'], /PUT/); assert.match(pre.headers['access-control-allow-methods'], /DELETE/);
+    assert.equal((await call(mock.url + '/__mock/api/state', { method: 'OPTIONS', headers: { origin: 'https://evil.example', 'access-control-request-method': 'GET' } })).status, 403);
     const page = await call(mock.url + '/__mock/');
     assert.equal(page.status, 200); assert.match(page.body, /window\.TINY_MOCK=/); assert.match(page.body, /"token":"t0k"/);
     assert.equal(page.headers['access-control-allow-origin'], undefined, 'other sites cannot read the page that holds the token');

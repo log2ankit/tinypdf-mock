@@ -1,6 +1,6 @@
 {
   "name": "tinypdf-mock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local mock API server with fault injection (503s, 429 + Retry-After, timeouts, dropped connections), a live request log and a browser control page. Zero dependencies.",
   "keywords": ["mock", "mock-server", "api", "rest", "fault-injection", "retry", "backoff", "testing", "chaos", "http", "cors", "frontend", "backend"],
   "homepage": "https://tinypdf.in/rest-api-playground.html",

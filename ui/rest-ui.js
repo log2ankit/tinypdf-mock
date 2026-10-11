@@ -356,7 +356,10 @@
       if (!local.on) { toast('Connect to a local server first, or switch to Simulator.'); $('ap-example').value = ''; return; }
       applyCfg(cfg, true);
       $('ap-example-desc').textContent = ex.desc + ' The fault is now set on your local server, so your own app sees it too.';
-      api('POST', '/reset').then(function () { return pushConfigNow(); }).then(send, function (e) { showError(e.message); });
+      /* hold: the form now holds the example, so the server's own news of the reset must not overwrite it */
+      local.hold = true;
+      var release = function () { local.hold = false; };
+      api('POST', '/reset?by=' + local.id).then(function () { return pushConfigNow(); }).then(function () { release(); return send(); }, function (e) { release(); showError(e.message); });
       return;
     }
     resetSim();
@@ -535,7 +538,8 @@
 
   /* ---------- local server: connection, settings, request log ---------- */
   function api(method, path, body) {
-    var init = { method: method, headers: { 'X-Mock-Token': local.token, 'X-Mock-Client': local.id }, cache: 'no-store' };
+    /* Only headers the server's cross-origin rules name may be sent from tinypdf.in: X-Mock-Token and Content-Type. */
+    var init = { method: method, headers: { 'X-Mock-Token': local.token }, cache: 'no-store' };
     if (body !== undefined) { init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(body); }
     return fetch(local.base + '/__mock/api' + path, init).then(function (r) {
       return r.json().then(function (j) {
@@ -618,7 +622,7 @@
     es.addEventListener('cleared', function () { local.log = []; local.selected = null; renderLog(); });
     es.addEventListener('config', function (ev) {
       var d = JSON.parse(ev.data);
-      if (d.by === local.id || !local.state) return;
+      if (d.by === local.id || local.hold || !local.state) return;
       local.state.config = d.config; local.state.routes = d.routes; applyServerState(local.state);
     });
     es.onerror = function () { if (local.es !== es) return; down = true; renderLocal('connection lost, trying again…'); };
@@ -787,7 +791,7 @@
     $('ap-reset-server').addEventListener('click', function () {
       if (target === 'local') {
         if (!local.on) return;
-        api('POST', '/reset').then(function () { toast('Server data reset: 3 items, no stored Idempotency-Keys, fault counts at zero. Routes kept.'); }, function (e) { toast(e.message); });
+        api('POST', '/reset?by=' + local.id).then(function () { toast('Server data reset: 3 items, no stored Idempotency-Keys, fault counts at zero. Routes kept.'); }, function (e) { toast(e.message); });
         return;
       }
       resetSim(); toast('Simulated server reset: 3 items, no stored Idempotency-Keys.');
