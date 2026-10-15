@@ -71,6 +71,33 @@ see whether it retried, how long it waited and whether it sent an `Idempotency-K
 connection, exactly as a timeout looks from the caller's side. If your service retries
 without an idempotency key, the request log shows the duplicate.
 
+## Mocking a flow of several calls
+
+A checkout or sign-up often calls several APIs one after another. Give each call its own route
+and one mock answers all of them, in the order your code calls them:
+
+```json
+{
+  "routes": [
+    { "method": "POST", "path": "/auth/token",
+      "body": { "access_token": "test-{{uuid}}", "expires_in": 3600 } },
+    { "method": "GET", "path": "/inventory/:sku",
+      "body": { "sku": "{{params.sku}}", "inStock": true, "qty": 12 } },
+    { "method": "POST", "path": "/payments", "status": 201,
+      "body": { "id": "{{uuid}}", "amount": "{{body.amount}}", "status": "paid" } }
+  ]
+}
+```
+
+- Three different services: point their base addresses at one mock if the paths do not clash,
+  or run one mock each: `npx tinypdf-mock auth.json -p 4747`, `stock.json -p 4748`, `pay.json -p 4749`.
+- One step failing: put a fault on that route only, such as
+  `"fault": "fail-first-n:n=1,status=503"` on `/payments`, or `"delayMs": 3000` to make it slow.
+- The control page and `mock.requests()` list the calls in the order they arrived.
+
+Each route gives the same answer every time, apart from the "first N" faults. A list of answers
+per route (pending, pending, then paid) is not supported yet.
+
 ## In tests
 
 ```js
