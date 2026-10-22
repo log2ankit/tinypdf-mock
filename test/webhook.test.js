@@ -46,7 +46,7 @@ test('back-off doubles from the base and stops at the cap', () => {
 test('sends and the receiver accepts a valid delivery', async () => {
   const rx = await startReceiver({ port: 0, secret: SECRET, path: '/hooks' });
   try {
-    const url = `http://localhost:${rx.port}/hooks`;
+    const url = `http://127.0.0.1:${rx.port}/hooks`;
     const res = await send({ url, secret: SECRET, body: BODY, retries: 0 });
     assert.equal(res.delivered, true);
     assert.equal(res.attempts[0].status, 200);
@@ -56,7 +56,7 @@ test('sends and the receiver accepts a valid delivery', async () => {
 test('a wrong secret is answered 401 and not retried', async () => {
   const rx = await startReceiver({ port: 0, secret: SECRET });
   try {
-    const res = await send({ url: `http://localhost:${rx.port}/hooks`, secret: 'nope', body: BODY, retries: 3, baseMs: 1 });
+    const res = await send({ url: `http://127.0.0.1:${rx.port}/hooks`, secret: 'nope', body: BODY, retries: 3, baseMs: 1 });
     assert.equal(res.delivered, false);
     assert.equal(res.attempts.length, 1);
     assert.equal(res.attempts[0].status, 401);
@@ -66,7 +66,7 @@ test('a wrong secret is answered 401 and not retried', async () => {
 test('an old event is answered 401 expired', async () => {
   const rx = await startReceiver({ port: 0, secret: SECRET });
   try {
-    const res = await send({ url: `http://localhost:${rx.port}/hooks`, secret: SECRET, body: BODY, ageSeconds: 900, retries: 0 });
+    const res = await send({ url: `http://127.0.0.1:${rx.port}/hooks`, secret: SECRET, body: BODY, ageSeconds: 900, retries: 0 });
     assert.equal(res.delivered, false);
     assert.equal(res.attempts[0].status, 401);
   } finally { await rx.close(); }
@@ -76,27 +76,30 @@ test('retries after 503s and delivers on a later try', async () => {
   const seen = [];
   const rx = await startReceiver({ port: 0, secret: SECRET, failFirst: 2, onRequest: (e) => seen.push(e.status) });
   try {
-    const res = await send({ url: `http://localhost:${rx.port}/hooks`, secret: SECRET, body: BODY, retries: 3, baseMs: 1, capMs: 2 });
+    const res = await send({ url: `http://127.0.0.1:${rx.port}/hooks`, secret: SECRET, body: BODY, retries: 3, baseMs: 1, capMs: 2 });
     assert.equal(res.delivered, true);
     assert.deepEqual(res.attempts.map((a) => a.status), [503, 503, 200]);
     assert.deepEqual(seen, [503, 503, 200]);
   } finally { await rx.close(); }
 });
 
-test('gives up after the retries when nothing answers', async () => {
-  const rx = await startReceiver({ port: 0, secret: SECRET });
-  const port = rx.port;
-  await rx.close();
-  const res = await send({ url: `http://localhost:${port}/hooks`, secret: SECRET, body: BODY, retries: 2, baseMs: 1, capMs: 2 });
-  assert.equal(res.delivered, false);
-  assert.equal(res.attempts.length, 3);
-  assert.ok(res.attempts.every((a) => a.error));
+test('gives up after the retries when the connection is dropped every time', async () => {
+  // A server that closes each connection at once: every try fails, and nothing else can take this port.
+  const net = require('net');
+  const drop = net.createServer((sock) => sock.destroy());
+  await new Promise((r) => drop.listen(0, '127.0.0.1', r));
+  try {
+    const res = await send({ url: `http://127.0.0.1:${drop.address().port}/hooks`, secret: SECRET, body: BODY, retries: 2, baseMs: 1, capMs: 2 });
+    assert.equal(res.delivered, false);
+    assert.equal(res.attempts.length, 3);
+    assert.ok(res.attempts.every((a) => a.error));
+  } finally { await new Promise((r) => drop.close(r)); }
 });
 
 test('a request to the wrong path is answered 404', async () => {
   const rx = await startReceiver({ port: 0, secret: SECRET, path: '/hooks' });
   try {
-    const res = await send({ url: `http://localhost:${rx.port}/other`, secret: SECRET, body: BODY, retries: 0 });
+    const res = await send({ url: `http://127.0.0.1:${rx.port}/other`, secret: SECRET, body: BODY, retries: 0 });
     assert.equal(res.attempts[0].status, 404);
   } finally { await rx.close(); }
 });
