@@ -98,6 +98,55 @@ and one mock answers all of them, in the order your code calls them:
 Each route gives the same answer every time, apart from the "first N" faults. A list of answers
 per route (pending, pending, then paid) is not supported yet.
 
+## Webhooks
+
+Send a signed webhook to your own endpoint, or receive one and check its signature. Both use the format of the
+webhook tester on tinypdf.in, so the same secret works in either. Each delivery carries
+
+    X-Webhook-Signature: t=<unix seconds>,v1=<HMAC-SHA256 of "<t>.<body>" with the secret, in hex>
+    X-Webhook-Id: <event id>
+
+Set the secret in `TINYPDF_WEBHOOK_SECRET` rather than on the command line, so it stays out of your shell history.
+
+### Test your app as a receiver
+
+Your app checks the signature and answers. The mock sends the event:
+
+    TINYPDF_WEBHOOK_SECRET=whsec_test npx tinypdf-mock webhook send http://localhost:3000/webhooks \
+      --body '{"type":"invoice.paid","id":"evt_1"}'
+
+Then check your app's behaviour:
+
+| Try | Command option | Your app should |
+|---|---|---|
+| A valid event | (none) | accept it and answer 200. The mock prints "delivered". |
+| The wrong secret | run the sender with another `TINYPDF_WEBHOOK_SECRET` | refuse it. The mock does not retry a 401. |
+| An old event | `--age 900` | refuse it as too old (the tolerance is 300 seconds). |
+| A failing endpoint | your app answers 503 for a while | keep retrying. The mock prints each try and its wait. |
+| Nothing listening | point at a port with no server | the mock retries, then prints "NOT delivered" and exits with 1. |
+
+`--retries`, `--base-ms`, `--cap-ms` and `--timeout` set the retry policy. The exit code is 0 when delivered.
+
+### Test the sender as your code
+
+The mock checks what your app sends. Start the receiver, then point your app at it:
+
+    TINYPDF_WEBHOOK_SECRET=whsec_test npx tinypdf-mock webhook receive --port 4848
+
+Your app should send to `http://localhost:4848/hooks` with the same secret. Each delivery is printed with its result:
+
+- `ok`: the signature is valid and the time is within tolerance. Answered 200.
+- `mismatch`: the secret is wrong, or the body changed after signing. Answered 401.
+- `expired`: the timestamp is outside the tolerance (300 seconds by default; change it with `--tolerance`). Answered 401.
+- `malformed`: the header is missing or not in the form above. Answered 400.
+
+`--fail-first 2` answers 503 to the first two deliveries, so you can check that your app retries. `--path` changes the path.
+
+### What this cannot do
+
+A local address cannot receive real provider webhooks, because the provider needs a public address to call.
+Test those with the provider's own test tools, or put a tunnel in front of the receiver.
+
 ## In tests
 
 ```js

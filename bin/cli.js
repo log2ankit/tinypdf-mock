@@ -11,6 +11,7 @@ A local mock API with fault injection, a live request log and a browser control 
 Usage
   npx ${pkg.name} [file] [options]
   npx ${pkg.name} init [file]        write a starter mock.json
+  npx ${pkg.name} webhook send|receive   send signed webhooks, or check them (see the README)
 
   file                 routes file to load (default: ./mock.json when it exists)
 
@@ -129,6 +130,7 @@ function line(e) {
 }
 
 async function main() {
+  if (process.argv[2] === 'webhook') return require('../lib/webhook-cli.js').run(process.argv.slice(3));
   const o = parseArgs(process.argv.slice(2));
   if (o.help) { console.log(HELP); return; }
   if (o.version) { console.log(pkg.version); return; }
