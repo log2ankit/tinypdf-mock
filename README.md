@@ -147,6 +147,42 @@ Your app should send to `http://localhost:4848/hooks` with the same secret. Each
 A local address cannot receive real provider webhooks, because the provider needs a public address to call.
 Test those with the provider's own test tools, or put a tunnel in front of the receiver.
 
+## GraphQL
+
+The mock can serve a GraphQL endpoint next to your REST routes. Give it a schema and some data, and it answers queries the way a real server would, including errors, partial data and null propagation.
+
+Add a `graphql` key to your routes file:
+
+```json
+{
+  "graphql": {
+    "path": "/graphql",
+    "schemaFile": "schema.graphql",
+    "dataFile": "data.json"
+  }
+}
+```
+
+`schema` (SDL text) and `data` (a JSON object) can go inline instead of in files. `schemaFile` and `dataFile` are read from the folder that holds the routes file. Restart the server after you change the schema or the data.
+
+The schema uses `type` and `scalar` definitions. Fields can take scalar arguments. The built-in scalars are `Int`, `Float`, `String`, `Boolean` and `ID`. Directives, interfaces, unions, enums, input types, mutations and subscriptions are not supported. A `Query` type is required.
+
+Your data is a JSON object. Each member holds a root value, and a field reads the member with its own name:
+
+- An object is returned as it is.
+- An array is filtered when the field has arguments. An element matches when each argument equals the element's property of the same name. So `user(id: "u2")` finds `{ "id": "u2" }` in an array. If the field is not a list, it returns the first match, or `null`.
+- If a field has arguments and its own name is missing, the mock looks for the plural name, so `user(id: "u2")` also uses `users`.
+- `{ "$error": "Inventory is down" }` makes that field fail with the message. The rest of the response is still returned.
+
+Requests go to `POST /graphql` with a JSON body `{ "query", "variables", "operationName" }`. `GET /graphql?query=...` also works. Results follow the GraphQL-over-HTTP convention:
+
+- If the response has `data`, the status is `200`, even when some fields failed.
+- If there is no `data` (a syntax or validation error), the status is `400`.
+
+Faults and latency from your config apply to this endpoint like any other route. A route you define yourself at the same path takes precedence.
+
+The query engine is written in C and compiled to WebAssembly, so it runs the same way in Node and in the browser. Its source is in `wasm/`. The JavaScript wrapper is `lib/graphql.js`. Rebuild the wasm with `wasm/build.sh` (it needs clang with the wasm32 target and wasm-ld).
+
 ## In tests
 
 ```js

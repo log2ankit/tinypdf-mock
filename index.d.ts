@@ -25,6 +25,8 @@ export interface MockOptions {
   port?: number;
   host?: string;
   routes?: MockRoute[];
+  /** A GraphQL endpoint served with the routes. See the README. */
+  graphql?: MockGraphQL;
   fault?: MockFault;
   latency?: { baseMs?: number; jitterMs?: number };
   seed?: number;
@@ -76,3 +78,12 @@ export function createMockServer(options?: MockOptions): MockServer;
 export function startMockServer(options?: MockOptions): Promise<MockServer>;
 export const DEFAULT_PORT: number;
 export const FAULTS: Array<{ type: string; label: string; help: string; fields: Array<{ key: string; label: string; def: number | string }> }>;
+
+export interface MockGraphQL {
+  /** Where the endpoint lives. Default "/graphql". */
+  path?: string;
+  /** SDL text with "type" and "scalar" definitions. Must define a "Query" type. */
+  schema?: string;
+  /** Root data: a JSON object whose members hold the root values. */
+  data?: Record<string, unknown>;
+}

@@ -51,6 +51,19 @@ Docs: ${pkg.homepage}`;
 
 function fail(msg) { process.stderr.write(pkg.name + ': ' + msg + '\n'); process.exit(1); }
 
+/* The "graphql" key of a routes file: { path, schema | schemaFile, data | dataFile }.
+ * Relative file names are read from the folder that holds the routes file. */
+function resolveGraphQL(g, file) {
+  if (!g || typeof g !== 'object') return undefined;
+  const base = file ? path.dirname(file) : process.cwd();
+  const read = (name) => fs.readFileSync(path.resolve(base, String(name)), 'utf8');
+  let schema = g.schema;
+  if (schema == null && g.schemaFile) schema = read(g.schemaFile);
+  let data = g.data;
+  if (data === undefined && g.dataFile) data = JSON.parse(read(g.dataFile));
+  return { path: g.path || '/graphql', schema: schema, data: data };
+}
+
 function parseArgs(argv) {
   const o = { allowOrigins: [], files: [] };
   const flags = { '--no-repeat': ['repeat', false], '--no-builtins': ['builtins', false], '--no-cors': ['cors', false], '--no-watch': ['watch', false],
@@ -157,6 +170,7 @@ async function main() {
     port: port !== undefined ? port : (fromFile.port !== undefined ? Number(fromFile.port) : undefined),
     host: o.host, token: o.token, allowOrigins: o.allowOrigins, insecure: !!o.insecure,
     routes: fromFile.routes || [],
+    graphql: resolveGraphQL(fromFile.graphql, file),
     fault: o.fault ? parseFault(o.fault) : fromFile.fault,
     latency: { baseMs: pick(num(o.latency, '--latency'), 'latency', 0), jitterMs: pick(num(o.jitter, '--jitter'), 'jitter', 0) },
     seed: pick(num(o.seed, '--seed'), 'seed', 42),
@@ -182,6 +196,7 @@ async function main() {
     '  Mock API       ' + mock.url,
     options.ui === false ? null : '  Control page   ' + mock.controlUrl,
     '  Routes         ' + routes + (file && fs.existsSync(file) ? ' from ' + path.relative(process.cwd(), file) + (o.watch === false ? '' : ' (reloads when it changes)') : '') + (cfg.builtins ? (routes ? ' + demo routes' : ' of your own; demo routes are on (try ' + mock.url + '/items)') : ''),
+    options.graphql ? '  GraphQL        POST ' + mock.url + options.graphql.path + '   (restart to pick up schema changes)' : null,
     '  Fault          ' + describeFault(cfg.fault) + (cfg.latency.baseMs || cfg.latency.jitterMs ? '   latency ' + cfg.latency.baseMs + ' ms + up to ' + cfg.latency.jitterMs + ' ms' : ''),
     options.ui === false ? null : '',
     options.ui === false ? null : '  To use the page on tinypdf.in instead, paste this there:',
