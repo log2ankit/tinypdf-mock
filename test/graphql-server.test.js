@@ -95,3 +95,28 @@ test('the endpoint path can be changed', async () => {
     assert.equal((await call(base, 'POST', '/graphql', { query: '{ users { id } }' })).status, 404);
   });
 });
+
+test('mutations change the data for later requests, and reset() restores it', async () => {
+  const mock = await startMockServer({ port: 0, graphql: { schema: 'type Query { users: [User!]! } type Mutation { addUser(name: String!): User } type User { id: ID! name: String! }', data: { users: [] }, mutations: { addUser: { insert: 'users' } } } });
+  try {
+    const add = await call(mock.url, 'POST', '/graphql', { query: 'mutation { addUser(name: "Asha") { id name } }' });
+    assert.deepEqual(add.json, { data: { addUser: { id: 'new1', name: 'Asha' } } });
+    const list = await call(mock.url, 'POST', '/graphql', { query: '{ users { name } }' });
+    assert.deepEqual(list.json, { data: { users: [{ name: 'Asha' }] } });
+    mock.reset();
+    const after = await call(mock.url, 'POST', '/graphql', { query: '{ users { name } }' });
+    assert.deepEqual(after.json, { data: { users: [] } });
+  } finally { await mock.stop(); }
+});
+
+test('a mutation sent with GET is refused with 405', async () => {
+  await withServer({ graphql: { schema: 'type Query { a: Int } type Mutation { b: Int }', data: {}, mutations: { b: { insert: 'x' } } } }, async (mock, base) => {
+    const r = await call(base, 'GET', '/graphql?query=' + encodeURIComponent('mutation { b }'));
+    assert.equal(r.status, 405);
+    assert.equal((await call(base, 'POST', '/graphql', { query: 'mutation { b }' })).status, 200);
+  });
+});
+
+test('a bad mutation handler stops startup', () => {
+  assert.throws(() => createMockServer({ graphql: { schema: 'type Query { a: Int }', mutations: { x: { update: '' } } } }), /exactly one/);
+});

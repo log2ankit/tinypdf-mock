@@ -86,4 +86,18 @@ export interface MockGraphQL {
   schema?: string;
   /** Root data: a JSON object whose members hold the root values. */
   data?: Record<string, unknown>;
+  /** What each Mutation field does to the data. Changes are kept in memory until restart. */
+  mutations?: Record<string, MockMutation>;
+}
+
+export interface MockMutation {
+  /** Add a new item to this list, built from the arguments. "defaults" fills in fields not given. */
+  insert?: string;
+  /** Change the item in this list whose "by" field equals the argument of the same name. */
+  update?: string;
+  /** Remove the item in this list whose "by" field equals the argument. Returns true or false. */
+  delete?: string;
+  /** Field used to find the item for update and delete. Default "id". */
+  by?: string;
+  defaults?: Record<string, unknown>;
 }

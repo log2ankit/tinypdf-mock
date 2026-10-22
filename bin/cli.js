@@ -61,7 +61,7 @@ function resolveGraphQL(g, file) {
   if (schema == null && g.schemaFile) schema = read(g.schemaFile);
   let data = g.data;
   if (data === undefined && g.dataFile) data = JSON.parse(read(g.dataFile));
-  return { path: g.path || '/graphql', schema: schema, data: data };
+  return { path: g.path || '/graphql', schema: schema, data: data, mutations: g.mutations };
 }
 
 function parseArgs(argv) {
