@@ -75,6 +75,7 @@ typedef struct Op {
   VarDef *vars;
   Sel *sub;
   size_t pos;
+  int isMutation;
   struct Op *next;
 } Op;
 
@@ -383,10 +384,11 @@ static int parse_document(Op **opsOut, Frag **fragsOut) {
       op->sub = parse_sel_set();
       if (!op->sub) return 0;
       *opTail = op; opTail = &op->next;
-    } else if (is_kw("query")) {
+    } else if (is_kw("query") || is_kw("mutation")) {
       Op *op = (Op *)galloc(sizeof(Op));
       if (!op) { perr("Out of memory", gCur.pos); return 0; }
       op->pos = gCur.pos;
+      op->isMutation = is_kw("mutation");
       if (!advance()) return 0;
       if (gCur.kind == T_NAME) {
         op->name = gCur.sval; op->nlen = gCur.svlen;
@@ -397,8 +399,8 @@ static int parse_document(Op **opsOut, Frag **fragsOut) {
       op->sub = parse_sel_set();
       if (!op->sub) return 0;
       *opTail = op; opTail = &op->next;
-    } else if (is_kw("mutation") || is_kw("subscription")) {
-      fail_at("Only query operations are supported");
+    } else if (is_kw("subscription")) {
+      fail_at("Subscriptions are not supported");
       return 0;
     } else if (is_kw("fragment")) {
       Frag *f = (Frag *)galloc(sizeof(Frag));

@@ -1,6 +1,6 @@
 {
   "name": "tinypdf-mock",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Local mock API server with fault injection (503s, 429 + Retry-After, timeouts, dropped connections), a live request log and a browser control page. Zero dependencies.",
   "keywords": [
     "mock",

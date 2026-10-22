@@ -20,6 +20,12 @@ static Frag *gFrags;
 static Op *gOp;
 static size_t gSteps;
 
+/* Mutations: the root fields of a mutation read their results from gMutRoot (keyed by response
+ * key) instead of resolving against the data. Only the root object of the data uses this. */
+static int gMutation;
+static JN *gMutRoot;
+static JN *gRootSrc;
+
 /* message builder, shared by validation and execution */
 static char mb[1024];
 static size_t mbn;
@@ -405,7 +411,7 @@ static int exec_field(Wr *w, Type *owner, Sel *fs, JN *src, int depth) {
   }
   Field *f = find_field(owner, fs->name, fs->nlen);
   if (!f) return 0; /* validated before execution, so this is unreachable */
-  JN *v = resolve_field(src, f, fs);
+  JN *v = (gMutation && src == gRootSrc) ? member(gMutRoot, key, kl) : resolve_field(src, f, fs);
   path_push_key(key, kl);
   int r = complete(w, owner, f, fs, &f->t, v, depth);
   path_pop();

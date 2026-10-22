@@ -165,7 +165,7 @@ Add a `graphql` key to your routes file:
 
 `schema` (SDL text) and `data` (a JSON object) can go inline instead of in files. `schemaFile` and `dataFile` are read from the folder that holds the routes file. Restart the server after you change the schema or the data.
 
-The schema uses `type` and `scalar` definitions. Fields can take scalar arguments. The built-in scalars are `Int`, `Float`, `String`, `Boolean` and `ID`. Directives, interfaces, unions, enums, input types, mutations and subscriptions are not supported. A `Query` type is required.
+The schema uses `type` and `scalar` definitions. Fields can take scalar arguments. The built-in scalars are `Int`, `Float`, `String`, `Boolean` and `ID`. Subscriptions, directives, interfaces, unions, enums and input types are not supported. A `Query` type is required. Mutations need a `Mutation` type, and each of its fields needs a handler (see below).
 
 Your data is a JSON object. Each member holds a root value, and a field reads the member with its own name:
 
@@ -178,6 +178,32 @@ Requests go to `POST /graphql` with a JSON body `{ "query", "variables", "operat
 
 - If the response has `data`, the status is `200`, even when some fields failed.
 - If there is no `data` (a syntax or validation error), the status is `400`.
+
+### Mutations
+
+A mutation changes the data for later requests. Declare what each `Mutation` field does in `mutations`:
+
+```json
+{
+  "graphql": {
+    "schemaFile": "schema.graphql",
+    "dataFile": "data.json",
+    "mutations": {
+      "addUser": { "insert": "users", "defaults": { "orders": [] } },
+      "renameUser": { "update": "users", "by": "id" },
+      "deleteUser": { "delete": "users", "by": "id" }
+    }
+  }
+}
+```
+
+- `insert` adds an item to the named list. The item is built from the arguments, `defaults` fills in fields that were not given, and an `id` is generated when none is given. The new item is returned.
+- `update` changes the item whose `by` field (default `id`) equals the argument of the same name. Only the arguments given are changed. Returns the item, or `null` if nothing matches.
+- `delete` removes the item whose `by` field matches. Returns `true`, or `false` if nothing matched.
+
+Each mutation field needs exactly one of `insert`, `update` or `delete`. Without a handler, the field returns an error, and the data is not changed. Mutations run in the order they are written.
+
+Writes are kept in memory. They last until the server restarts, and they do not change `data.json`. Changes apply to top-level lists only: an order copied inside a user is not updated when you change the order in the `orders` list. Mutations must be sent with `POST`. A `GET` gets a 405.
 
 Faults and latency from your config apply to this endpoint like any other route. A route you define yourself at the same path takes precedence.
 

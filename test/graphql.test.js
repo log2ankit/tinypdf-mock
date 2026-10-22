@@ -163,3 +163,75 @@ test('the same input gives the same output on repeated calls', () => {
   const second = run('{ users { id name } }');
   assert.deepEqual(first, second);
 });
+
+// ---------- mutations ----------
+const MUT_SCHEMA = 'type Query { users: [User!]! } type Mutation { addUser(name: String!, email: String): User renameUser(id: ID!, name: String!): User removeUser(id: ID!): Boolean } type User { id: ID! name: String! email: String orders: [Int!]! }';
+const MUT_MAP = {
+  addUser: { insert: 'users', defaults: { orders: [] } },
+  renameUser: { update: 'users', by: 'id' },
+  removeUser: { delete: 'users', by: 'id' },
+};
+const freshMutData = () => ({ users: [{ id: 'u1', name: 'Asha', orders: [] }] });
+
+test('mutations are planned with their arguments, in order', () => {
+  const p = g.plan(MUT_SCHEMA, 'mutation { addUser(name: "A") { id } removeUser(id: "u1") }');
+  assert.equal(p.kind, 'mutation');
+  assert.deepEqual(p.calls, [
+    { key: 'addUser', field: 'addUser', args: { name: 'A' } },
+    { key: 'removeUser', field: 'removeUser', args: { id: 'u1' } },
+  ]);
+  assert.equal(g.plan(MUT_SCHEMA, '{ users { id } }').kind, 'query');
+});
+
+test('insert adds an item built from the arguments, with defaults and a new id', () => {
+  const data = freshMutData();
+  const res = g.execute(MUT_SCHEMA, 'mutation { addUser(name: "Meera", email: "m@x.in") { id name email orders } }', { data, mutations: MUT_MAP });
+  assert.deepEqual(res, { data: { addUser: { id: 'new2', name: 'Meera', email: 'm@x.in', orders: [] } } });
+  assert.equal(data.users.length, 2);
+});
+
+test('update changes the item found by id, and a query sees the change', () => {
+  const data = freshMutData();
+  const res = g.execute(MUT_SCHEMA, 'mutation R($id: ID!) { renameUser(id: $id, name: "Ravi") { id name } }', {
+    data, mutations: MUT_MAP, variables: { id: 'u1' },
+  });
+  assert.deepEqual(res, { data: { renameUser: { id: 'u1', name: 'Ravi' } } });
+  assert.deepEqual(g.execute(MUT_SCHEMA, '{ users { name } }', { data }).data, { users: [{ name: 'Ravi' }] });
+});
+
+test('delete removes the item and returns true, or false when nothing matches', () => {
+  const data = freshMutData();
+  assert.deepEqual(g.execute(MUT_SCHEMA, 'mutation { removeUser(id: "zz") }', { data, mutations: MUT_MAP }).data, { removeUser: false });
+  assert.deepEqual(g.execute(MUT_SCHEMA, 'mutation { removeUser(id: "u1") }', { data, mutations: MUT_MAP }).data, { removeUser: true });
+  assert.deepEqual(data.users, []);
+});
+
+test('a mutation with no handler returns a field error and does not write', () => {
+  const data = freshMutData();
+  const res = g.execute(MUT_SCHEMA, 'mutation { removeUser(id: "u1") }', { data, mutations: {} });
+  assert.equal(res.data.removeUser, null);
+  assert.match(res.errors[0].message, /No handler for mutation "removeUser"/);
+  assert.equal(data.users.length, 1);
+});
+
+test('several mutations in one request run in order, aliases give each result its own key', () => {
+  const data = freshMutData();
+  const res = g.execute(MUT_SCHEMA, 'mutation { a: addUser(name: "X") { name } b: addUser(name: "Y") { name } }', { data, mutations: MUT_MAP });
+  assert.deepEqual(res.data, { a: { name: 'X' }, b: { name: 'Y' } });
+  assert.deepEqual(data.users.map((u) => u.name), ['Asha', 'X', 'Y']);
+});
+
+test('a mutation on a schema without a Mutation type is rejected before anything runs', () => {
+  const res = g.execute('type Query { a: Int }', 'mutation { a }', { data: {} });
+  assert.match(res.errors[0].message, /no Mutation type/);
+});
+
+test('subscriptions are still rejected', () => {
+  assert.equal(g.execute(MUT_SCHEMA, 'subscription { users { id } }').errors[0].message, 'Subscriptions are not supported');
+});
+
+test('handler definitions are checked', () => {
+  const { validateMutations } = require('../lib/graphql.js');
+  assert.throws(() => validateMutations({ x: {} }), /exactly one of insert, update or delete/);
+  assert.throws(() => validateMutations({ x: { insert: 'a', delete: 'b' } }), /exactly one/);
+});
